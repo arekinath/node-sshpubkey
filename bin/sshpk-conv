@@ -38,6 +38,11 @@ var options = [
 		help: 'Produce a private key as output'
 	},
 	{
+		names: ['certificate', 'C'],
+		type: 'bool',
+		help: 'Expect a certificate as input, not a public/private key'
+	},
+	{
 		names: ['derive', 'd'],
 		type: 'string',
 		help: 'Output a new key derived from this one, with given algo'
@@ -61,6 +66,11 @@ var options = [
 		names: ['spki', 's'],
 		type: 'bool',
 		help: 'With -F, generates an SPKI fingerprint instead of SSH'
+	},
+	{
+		names: ['pkhh', 'P'],
+		type: 'bool',
+		help: 'With -F, generates a MacOS pkhh fingerprint instead of SSH'
 	},
 	{
 		names: ['comment', 'c'],
@@ -161,6 +171,11 @@ if (require.main === module) {
 		var f = sshpk.parseKey;
 		if (opts.private)
 			f = sshpk.parsePrivateKey;
+		if (opts.certificate) {
+			f = sshpk.parseCertificate;
+			if (fmt === 'auto')
+				fmt = 'pem';
+		}
 		try {
 			var key = f(buf, fmt, parseOpts);
 		} catch (e) {
@@ -174,6 +189,12 @@ if (require.main === module) {
 				return;
 			}
 			ifError(e);
+		}
+
+		if (opts.certificate) {
+			var cert = key;
+			key = cert.subjectKey;
+			key.comment = cert.subjects[0].toString();
 		}
 
 		if (opts.derive)
@@ -198,13 +219,22 @@ if (require.main === module) {
 			    key.fingerprint('md5').toString());
 			console.log('SPKI-SHA256 fingerprint: ' +
 			    key.fingerprint('sha256', 'spki').toString());
+			console.log('MacOS pkhh fingerprint: ' +
+			    key.fingerprint('sha1', 'pkhh').toString());
 			process.exit(0);
 			return;
 		}
 
 		if (opts.fingerprint) {
 			var hash = opts.hash;
-			var type = opts.spki ? 'spki' : 'ssh';
+			var type = 'ssh';
+			if (opts.spki)
+				type = 'spki';
+			if (opts.pkhh) {
+				if (!hash)
+					hash = 'sha1';
+				type = 'pkhh';
+			}
 			var format = opts.outformat;
 			var fp = key.fingerprint(hash, type).toString(format);
 			outFile.write(fp);

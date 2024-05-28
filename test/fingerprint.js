@@ -38,6 +38,11 @@ var ED2_PEM = '-----BEGIN PUBLIC KEY-----\n' +
 	'MCowBQYDK2VwAyEA+76Hlm7wYeCHyx5n0aK21NYd+luLS+Q2SwfvvJowqoM=\n' +
 	'-----END PUBLIC KEY-----\n';
 
+var PKHH_PUBKEY = 'ecdsa-sha2-nistp256 ' +
+	'AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBB0PaRc5Tc9C' +
+	'w8A6RRqFa+IdHF5LUFK5hkv32GnMmk/Eo2eafy2Ihxp0YnEbyg096g5J8wV6dpXv' +
+	'o2dXNYDoYjc=';
+
 test('fingerprint', function(t) {
 	var k = sshpk.parseKey(SSH_1024, 'ssh');
 	var fp = k.fingerprint('md5').toString();
@@ -170,5 +175,12 @@ test('invalid fingerprints', function(t) {
 		var fp = sshpk.parseFingerprint(
 		    '59:a46:1:0e:38:18:9f:0f:28:58:2a:27:f7:65:c5:87');
 	}, sshpk.FingerprintFormatError);
+	t.end();
+});
+
+test('pkhh fingerprint for macos', function (t) {
+	var k = sshpk.parseKey(PKHH_PUBKEY, 'ssh');
+	var f = k.fingerprint('sha1', 'pkhh');
+	t.equal(f.toString(), '674C1B03D2A4885BB106E67D8A9BE82C078E27CB');
 	t.end();
 });
